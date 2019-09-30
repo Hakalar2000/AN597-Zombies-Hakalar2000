@@ -1,0 +1,115 @@
+---
+title: "AN597-Zombie-OriginalHWCode-Hakalar2000"
+author: "Me"
+date: "September 30, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+First We need to load in the data we are going to use to analyze the zombie apocolyse survivors! 
+```{r}
+library(curl)
+f <- f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN597_Fall19/zombies.csv")
+d <- read.csv(f, header = TRUE, sep = ",", stringsAsFactors = FALSE)
+head(d)
+#Lit
+```
+Reading through the questions it looks like we need to use a lot-o ggplot so Ima just make sure that is loaded in 
+```{r}
+library(ggplot2)
+install.packages("gridExtra")
+library(gridExtra)
+#This package will allow us to place ggplots onto a single pane. 
+#Awesome!
+```
+
+Question 1: Calculate the population mean and standard deviation for each quantitative random variable (height, weight, age, number of zombies killed, and years of education). NOTE: You will NOT want to use the built in var() and sd() commands as these are for samples.
+```{r}
+str(d)
+summary(d)
+#This gives me all the means tbh but not SD. 
+mean(d$height) #67.6301
+sd(d$height) #4.310126
+mean(d$weight) #143.9075
+sd(d$weight) #18.40106
+mean(d$age) #20.04696
+sd(d$age) #2.965066
+mean(d$zombies_killed) #2.992
+sd(d$zombies_killed) #1.748426
+mean(d$years_of_education) #2.996
+sd(d$years_of_education) #1.676543
+#Honestly I feel like there was some way to do this all at once instead of breaking the table up like this. Lets try some other techniques
+sapply(d, mean, na.rm = TRUE)
+sapply(d, sd, na.rm = TRUE)
+#I mean this works, but reading the results in the consol is kinda hellish. 
+```
+
+[2] Use {ggplot} and make boxplots of each of these variables by gender.
+```{r}
+summary(d)
+?ggplot
+#Gotta know what to do man
+?geom_boxplot()
+#Lets get more specific
+ggplot(d, aes(gender, age)) + geom_boxplot(outlier.color = "red")
+#ok so ggplot is strange but whatever. Aes specifies the x and y axis, and + geom_boxplot specifies that this bitch is a boxplot if you can't tell. I made outlier points red so they are more noticable and to seem like I'm fancy cause color bitches...It's 3 am let me live. 
+#Just gotta do this for all the other fun variables
+grid.arrange(Uno, Dos, Tres, Cuatro, nrow = 2)
+Uno<-ggplot(d, aes(gender, age)) + geom_boxplot(outlier.color = "red")
+Dos<-ggplot(d, aes(gender, weight)) + geom_boxplot(outlier.color = "red")
+Tres<-ggplot(d, aes(gender, zombies_killed)) + geom_boxplot(outlier.color = "red")
+Cuatro<-ggplot(d, aes(gender, years_of_education)) + geom_boxplot(outlier.color = "red")
+#grid.arrange helps us see all our plots on the same pane. 
+```
+
+[3] Use {ggplot} and make scatterplots of height and weight in relation to age. Do these variables seem to be related? In what way?
+```{r}
+ggplot(d, aes(age, height)) + geom_point(colour = "red") 
+ggplot(d, aes(age, weight)) + geom_point(colour = "red")
+?geom_point #so I know what commands geom_point understands
+ggplot() + geom_point(data = d, aes(age, height), colour = "red") +geom_point(data = d, aes(age, weight), colour = "blue")
+#ok now we have our data on the same plot which I'm kida not liking cause they are so different. change of plans, we go with two panes. 
+grid.arrange(x, z, nrow = 1)
+x<-ggplot(d, aes(age, height)) + geom_point(colour = "red") 
+z<-ggplot(d, aes(age, weight)) + geom_point(colour = "red")
+```
+Height and age seem to be somewhat related but there is no way to know if this realtionship is significant until we do some stats analysis. Between age and weight, there seems to be little to no significance because they plots seem very scattered and decentralized. 
+
+[4] Using histograms and Q-Q plots, check whether the quantitative variables seem to be drawn from a normal distribution. Which seem to be and which do not (hint: not all are drawn from the normal distribution)? For those that are not, can you determine what common distribution they are drawn from?
+```{r}
+
+```
+
+[5] Now use the sample() function to sample ONE subset of 30 zombie survivors (without replacement) from this population and calculate the mean and sample standard deviation for each variable. Also estimate the standard error for each variable and construct the 95% confidence interval for each mean. Note that for the variables that are not drawn from the normal distribution, you will need to base your estimate of the CIs on some different distribution.
+```{r}
+
+```
+
+[6] Now draw 99 more random samples of 30 zombie survivors out and calculate the mean for each of the these samples. Together with the first sample you drew out, you now have a set of 100 means for each variable (each based on 30 observations), which constitutes a sampling distribution for each variable. What are the means and standard deviations of this distribution for each variable? How do the standard deviations compare to the standard errors estimated in [5]? What do these sampling distributions look like? Are they normally distributed? What about for those variables that you concluded were not originally drawn from a normal distribution?
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
