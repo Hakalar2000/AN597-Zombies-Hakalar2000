@@ -9,7 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-First We need to load in the data we are going to use to analyze the zombie apocolyse survivors! 
+First We need to load in the data we are going to use to analyze the zombie apocolyse survivors! Note that this is a population not a sample. 
+
 ```{r}
 library(curl)
 f <- f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN597_Fall19/zombies.csv")
@@ -17,12 +18,18 @@ d <- read.csv(f, header = TRUE, sep = ",", stringsAsFactors = FALSE)
 head(d)
 #Lit
 ```
-Reading through the questions it looks like we need to use a lot-o ggplot so Ima just make sure that is loaded in 
+Reading through the questions it looks like we need to use a lot-o ggplot so Ima just make sure that is loaded in
+
 ```{r}
 library(ggplot2)
+library(dplyr) #so we can get rid of some varaibles when we want to
 install.packages("gridExtra")
 library(gridExtra)
 #This package will allow us to place ggplots onto a single pane. 
+library(psych) #The describe function will provide statists from mean to skewness to standard error
+library(simpleboot) # for bootstrapping sample data
+library(boot) # for calculating CIs of boostrapped and non normal distributed ddata
+
 #Awesome!
 ```
 
@@ -45,10 +52,16 @@ sd(d$years_of_education) #1.676543
 sapply(d, mean, na.rm = TRUE)
 sapply(d, sd, na.rm = TRUE)
 #I mean this works, but reading the results in the consol is kinda hellish. 
+#lets do this by getting rid of variables that are not quantitative. 
+c<-select(d, height, weight, age, zombies_killed, years_of_education)
+sapply(c, mean, na.rm = TRUE)
+sapply(c, sd, na.rm = TRUE)
+#So pretty!!!
 ```
 
 [2] Use {ggplot} and make boxplots of each of these variables by gender.
 ```{r}
+#Ok so we can keep the data as d since we want gender in there. 
 summary(d)
 ?ggplot
 #Gotta know what to do man
@@ -57,11 +70,12 @@ summary(d)
 ggplot(d, aes(gender, age)) + geom_boxplot(outlier.color = "red")
 #ok so ggplot is strange but whatever. Aes specifies the x and y axis, and + geom_boxplot specifies that this bitch is a boxplot if you can't tell. I made outlier points red so they are more noticable and to seem like I'm fancy cause color bitches...It's 3 am let me live. 
 #Just gotta do this for all the other fun variables
-grid.arrange(Uno, Dos, Tres, Cuatro, nrow = 2)
 Uno<-ggplot(d, aes(gender, age)) + geom_boxplot(outlier.color = "red")
 Dos<-ggplot(d, aes(gender, weight)) + geom_boxplot(outlier.color = "red")
 Tres<-ggplot(d, aes(gender, zombies_killed)) + geom_boxplot(outlier.color = "red")
 Cuatro<-ggplot(d, aes(gender, years_of_education)) + geom_boxplot(outlier.color = "red")
+Cinco<-ggplot(d, aes(gender, height)) + geom_boxplot(outlier.color = "red")
+grid.arrange(Uno, Dos, Tres, Cuatro, Cinco, nrow = 2)
 #grid.arrange helps us see all our plots on the same pane. 
 ```
 
@@ -72,28 +86,180 @@ ggplot(d, aes(age, weight)) + geom_point(colour = "red")
 ?geom_point #so I know what commands geom_point understands
 ggplot() + geom_point(data = d, aes(age, height), colour = "red") +geom_point(data = d, aes(age, weight), colour = "blue")
 #ok now we have our data on the same plot which I'm kida not liking cause they are so different. change of plans, we go with two panes. 
-grid.arrange(x, z, nrow = 1)
 x<-ggplot(d, aes(age, height)) + geom_point(colour = "red") 
-z<-ggplot(d, aes(age, weight)) + geom_point(colour = "red")
+z<-ggplot(d, aes(age, weight)) + geom_point(colour = "blue")
+grid.arrange(x, z, nrow = 1)
+# We did this with d cause like I only decided to make c a thing the next day.
 ```
-Height and age seem to be somewhat related but there is no way to know if this realtionship is significant until we do some stats analysis. Between age and weight, there seems to be little to no significance because they plots seem very scattered and decentralized. 
+Height and age seem to be somewhat related in a positive linear way, but there is no way to know if this realtionship is significant until we do some stats analysis. Between age and weight, there seems to be little to no significance because they plots seem very scattered and decentralized. 
 
-[4] Using histograms and Q-Q plots, check whether the quantitative variables seem to be drawn from a normal distribution. Which seem to be and which do not (hint: not all are drawn from the normal distribution)? For those that are not, can you determine what common distribution they are drawn from?
+[4] Using histograms and Q-Q plots, check whether the quantitative variables seem to be drawn from a normal distribution. Which seem to be and which do not (hint: not all are drawn from the normal distribution)? For those that are not, can you determine what common distribution they are drawn from)?
 ```{r}
-
+# Our varibles are height, weight, age, number of zombies killed, and years of education
+# Not sure if I need theoretical quantiles to plot my data against...
+h<-d$height
+w<-d$weight
+a<-d$age
+z<-d$zombies_killed
+e<-d$years_of_education
+qqnorm(h,main="Normal QQ plot random normal variables")
+qqline(h,col="gray")
+hist(h)
+qqnorm(w,main="Normal QQ plot random normal variables")
+qqline(w,col="gray")
+hist(w)
+qqnorm(a,main="Normal QQ plot random normal variables")
+qqline(a,col="gray")
+hist(a)
+qqnorm(z,main="Normal QQ plot random normal variables")
+qqline(z,col="gray")
+hist(z)
+qqnorm(e,main="Normal QQ plot random normal variables")
+qqline(e,col="gray")
+hist(e)
+#I have no idea if there was some way to batch proccess this hole thing. maybe I could have used attached instead of assigning all these variables...
 ```
+Height, age, and weight appear to be normally distributed while number of zombies killed and years of education appear not to be distributed since their histograms have means that fall to the side instead of the middle. Their qqplots also display step data instead of a linear correlation which suggests that these variables are no normally distributed. 
+
+So what are the distributions for other varaibles that are not normally distributed? Not sure, but our data is skewed to the left in both cases and the q-q plot suggests that there are distinct groupings or clusters within our data. Both of these are actually right skewed since the mean of the data is to the left. 
 
 [5] Now use the sample() function to sample ONE subset of 30 zombie survivors (without replacement) from this population and calculate the mean and sample standard deviation for each variable. Also estimate the standard error for each variable and construct the 95% confidence interval for each mean. Note that for the variables that are not drawn from the normal distribution, you will need to base your estimate of the CIs on some different distribution.
 ```{r}
+#Lets use c here so we don't have to deal with non-quantitative variables
+?sample()
+t<-c[sample(nrow(c), 30, replace = FALSE), ]
+summary(t)
+sapply(t, mean, na.rm = TRUE)
+sapply(t, sd, na.rm = TRUE)
+str(t)
+#Ok now we need SE and a 95% CI. Three of our five variables are normally distributed, so lets separate those out and call them norm. Lets call the other two variables oth. 
+norm<-select(t, age, weight, height)
+summary(norm)
+str(norm)
+oth<-select(t, years_of_education, zombies_killed)
+summary(oth)
+install.packages("psych")
+library(psych) #This package will let me run all sorts of basics stats analysis on my data using the describe function. 
+?describe
+describe(norm)
+describe(oth)
+#Var is just an ID number not the variance. Also notice that skew is much heigher for the oth variables. A positive skew also indicates that the data is skewed to the right which is what we said earlier. 
+# Now we need to assign a 95% CI to our variables
+#Height
+height<-t$height
+describe(height)
+mean<-67.71
+sd<-3.62
+sem<-sd/sqrt(30)
+lower<- 67.71 - qnorm(1-0.05/2)*sem
+upper<- 67.71 + qnorm(1-0.05/2)*sem
+upper
+lower
+ci_height<-c(lower, upper)
+ci_height
+#Weight
+weight<-t$weight
+describe(weight)
+mean<-143.55
+sd<-17.73
+sem<-sd/sqrt(30)
+lower<- 143.55 - qnorm(1-0.05/2)*sem
+upper<- 143.55 + qnorm(1-0.05/2)*sem
+upper
+lower
+ci_weight<-c(lower, upper)
+ci_weight
+#Age
+Age<-t$age
+describe(Age)
+mean<-20.27
+sd<-2.47
+sem<-sd/sqrt(30)
+lower<- 20.27 - qnorm(1-0.05/2)*sem
+upper<- 20.27 + qnorm(1-0.05/2)*sem
+upper
+lower
+ci_age<-c(lower, upper)
+ci_age
+#Zombies Killed
+zom<-t$zombies_killed
+describe(zom)
+install.packages("simpleboot") #to bootstrap our data
+install.packages("boot") #to calculate CIs for our boostrapped data
+library(simpleboot) # 20% trimmed mean bootstrap whatever that means
+library(boot)
+?one.boot
+?boot.ci
+b1 <- one.boot(zom, mean, R=10000)
+#since this is a sample of a population we can bootstrap the data cause thats was you do for skewed data apparently. Also I found this data has what is called a beta distribution so yay, it has a name. Also I have no idea why I chose to boostrap this data 10,000 times. It just seemed like a good amount of times. 
+boot.ci(b1, conf = 0.95, type=c("bca"))
+#for type we can specify what kind of distribution we want to calculate CIs for. Our options include normal, but we already know this is not a normal distribution. 
+#honestly not sure why I am using bca, but the internet said this was the best type to use in the presence of beta distributions. 
+#Years of Education
+Edu<-t$years_of_education
+describe(Edu)
+b2 <- one.boot(Edu, mean, R=10000)
+boot.ci(b2, conf = 0.95, type=c("bca"))
 
 ```
+#for whomever runs my code: you may have to go back and pull the package from the library if the code does not work. I put all my packages at the start of the markdown file
 
 [6] Now draw 99 more random samples of 30 zombie survivors out and calculate the mean for each of the these samples. Together with the first sample you drew out, you now have a set of 100 means for each variable (each based on 30 observations), which constitutes a sampling distribution for each variable. What are the means and standard deviations of this distribution for each variable? How do the standard deviations compare to the standard errors estimated in [5]? What do these sampling distributions look like? Are they normally distributed? What about for those variables that you concluded were not originally drawn from a normal distribution?
 ```{r}
+#For our normal distribution variables we can use rnorm cuase its much easier. I have no idea if I should use set.seed at all for this. 
+#age 
+c$age
+x_age<-replicate(100, sample(c$age, 30))
+stat_age<-t(apply(x_age, 2, function(x_age) c(Mean=mean(x_age), Sd=sd(x_age))))
+stat_age
+str(stat_age)
+dimnames(stat_age)
+mean(replicate(100, sample(c$age, 30))) #mean of means
+sd(replicate(100, sample(c$age, 30))) #sd of means
+
+
+#YAS! ok os the 2 is specifying 2 columns, which we have as Mean and SD. 
+
+#Weight
+x_weight<-replicate(100, sample(c$weight, 30))
+stat_weight<-t(apply(x_weight, 2, function(x_weight) c(Mean=mean(x_weight), Sd=sd(x_weight))))
+stat_weight
+mean(replicate(100, sample(c$weight, 30)))
+sd(replicate(100, sample(c$weight, 30)))
+
+#Height
+x_height<-replicate(100, sample(c$height, 30))
+stat_height<-t(apply(x_height, 2, function(x_height) c(Mean=mean(x_height), Sd=sd(x_height))))
+stat_height
+mean(replicate(100, sample(c$height, 30)))
+sd(replicate(100, sample(c$height, 30)))
+
+#zombies killed
+x_zom<-replicate(100, sample(c$zombies_killed, 30))
+stat_zom<-t(apply(x_zom, 2, function(x_zom) c(Mean=mean(x_zom), Sd=sd(x_zom))))
+stat_zom
+mean(replicate(100, sample(c$zombies_killed, 30)))
+sd(replicate(100, sample(c$zombies_killed, 30)))
+
+#Years of education
+x_edu<-replicate(100, sample(c$years_of_education, 30))
+stat_edu<-t(apply(x_edu, 2, function(x_edu) c(Mean=mean(x_edu), Sd=sd(x_edu))))
+stat_edu
+mean(replicate(100, sample(c$years_of_education, 30)))
+sd(replicate(100, sample(c$years_of_education, 30)))
+
+#I would like to note that using rnorm to randomly sample the sets that have supposed normal distributions does not work. Not sure why though. 
 
 ```
+The mean of means for each variable are between the confidence intervals calculated in problem five. Not really sure how standard deviations compare with standard error since my standard error was much lower than my SDs. 
+I have no idea what to do for the sampling distributions. Does he want me to model the averages or does he want me to model each of the 100 replicates?
 
-
+Five things I cried about this week:
+*Is the non-normal distribution a beta distribution (aka a skewed distribution). like is that the official name? And what r fucntion is there specifically for skewed data?
+*Why did rnorm not work when trying to take replicates for my normally distributed data?
+*I think I got my CIs correct, but it was a little confusing for me still. 
+*Why would we ever do for loops? I don't understand for loops at all!
+*I hope we didn't have to do anythign with the data that was not quantitative cause I got rid of that. 
 
 
 
